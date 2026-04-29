@@ -1,26 +1,177 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Turbo design tokens ──────────────────────────────────────── */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color — brand */
+  --color-brand:              #1160E1;
+
+  /* Color — text */
+  --color-text-primary:       #3F3F3F;
+  --color-text-secondary:     #7B7B7B;
+  --color-text-muted:         #6A7282;
+  --color-text-brand-label:   #5F7292;
+  --color-text-on-brand:      #FFFFFF;
+
+  /* Color — surface */
+  --color-surface-base:       #FFFFFF;
+  --color-surface-nav-active: #F3F7FC;
+  --color-surface-muted:      #F3F4F6;
+  --color-surface-overlay:    rgba(0, 0, 0, 0.04);
+
+  /* Color — border */
+  --color-border-subtle:      rgba(0, 0, 0, 0.10);
+  --color-border-divider:     #F3F4F6;
+
+  /* Color — health score */
+  --color-health-great:       #00C950;
+  --color-health-great-text:  #00A63E;
+  --color-health-medium:      #F59E0B;
+  --color-health-medium-text: #B45309;
+  --color-health-bad:         #EF4444;
+  --color-health-bad-text:    #B91C1C;
+  --color-health-track:       #F3F4F6;
+
+  /* Color — status badges */
+  --color-badge-no-response-bg:     #FEF9C2;
+  --color-badge-no-response-border: #FFF085;
+  --color-badge-no-response-text:   #894B00;
+  --color-badge-qualified-bg:       #DCFCE7;
+  --color-badge-qualified-border:   #86EFAC;
+  --color-badge-qualified-text:     #166534;
+  --color-badge-interested-bg:      #DBEAFE;
+  --color-badge-interested-border:  #93C5FD;
+  --color-badge-interested-text:    #1E40AF;
+  --color-badge-nurture-bg:         #EDE9FE;
+  --color-badge-nurture-border:     #C4B5FD;
+  --color-badge-nurture-text:       #5B21B6;
+  --color-badge-meeting-bg:         #CFFAFE;
+  --color-badge-meeting-border:     #67E8F9;
+  --color-badge-meeting-text:       #164E63;
+  --color-badge-not-interested-bg:  #FEE2E2;
+  --color-badge-not-interested-border: #FCA5A5;
+  --color-badge-not-interested-text:#991B1B;
+  --color-badge-closed-won-bg:      #DCFCE7;
+  --color-badge-closed-won-border:  #86EFAC;
+  --color-badge-closed-won-text:    #14532D;
+  --color-badge-new-bg:             #F0F9FF;
+  --color-badge-new-border:         #BAE6FD;
+  --color-badge-new-text:           #0C4A6E;
+  --color-badge-default-bg:         #F3F4F6;
+  --color-badge-default-border:     #D1D5DB;
+  --color-badge-default-text:       #374151;
+
+  /* Color — alerts */
+  --color-alert-critical-bg:    #FEF2F2;
+  --color-alert-critical-border:#FCA5A5;
+  --color-alert-critical-text:  #991B1B;
+  --color-alert-critical-icon:  #DC2626;
+  --color-alert-warning-bg:     #FFFBEB;
+  --color-alert-warning-border: #FCD34D;
+  --color-alert-warning-text:   #78350F;
+  --color-alert-warning-icon:   #D97706;
+  --color-alert-info-bg:        #EFF6FF;
+  --color-alert-info-border:    #93C5FD;
+  --color-alert-info-text:      #1E40AF;
+  --color-alert-info-icon:      #3B82F6;
+
+  /* Typography */
+  --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+
+  /* Spacing */
+  --spacing-nav-item-pl: 28px;
+
+  /* Radii */
+  --radius-btn:    4px;
+  --radius-badge:  8px;
+  --radius-card:   8px;
+  --radius-pill:   9999px;
+
+  /* Shadows */
+  --shadow-sidebar: 2px 4px 64px rgba(203, 203, 203, 0.25);
+  --shadow-card:    0px 3px 12px rgba(201, 201, 201, 0.25);
+  --shadow-nav:     0px 3px 6px rgba(201, 201, 201, 0.25);
+
+  /* shadcn compat — map to Turbo tokens */
+  --background:           var(--color-surface-base);
+  --foreground:           var(--color-text-primary);
+  --primary:              var(--color-brand);
+  --primary-foreground:   var(--color-text-on-brand);
+  --secondary:            var(--color-surface-muted);
+  --secondary-foreground: var(--color-text-primary);
+  --muted:                var(--color-surface-muted);
+  --muted-foreground:     var(--color-text-secondary);
+  --border:               var(--color-border-divider);
+  --ring:                 var(--color-brand);
+  --radius:               0.5rem;
+  --card:                 var(--color-surface-base);
+  --card-foreground:      var(--color-text-primary);
+  --popover:              var(--color-surface-base);
+  --popover-foreground:   var(--color-text-primary);
+  --accent:               var(--color-surface-nav-active);
+  --accent-foreground:    var(--color-text-primary);
+  --destructive:          var(--color-health-bad);
+  --input:                var(--color-border-divider);
 }
+
+/* ─── Tailwind theme bridge (v4) ────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+
+  /* Expose Turbo tokens as Tailwind utilities */
+  --color-brand:              var(--color-brand);
+  --color-text-primary:       var(--color-text-primary);
+  --color-text-secondary:     var(--color-text-secondary);
+  --color-text-muted:         var(--color-text-muted);
+  --color-text-brand-label:   var(--color-text-brand-label);
+  --color-text-on-brand:      var(--color-text-on-brand);
+  --color-surface-base:       var(--color-surface-base);
+  --color-surface-nav-active: var(--color-surface-nav-active);
+  --color-surface-muted:      var(--color-surface-muted);
+  --color-border-subtle:      var(--color-border-subtle);
+  --color-border-divider:     var(--color-border-divider);
+  --color-health-great:       var(--color-health-great);
+  --color-health-medium:      var(--color-health-medium);
+  --color-health-bad:         var(--color-health-bad);
+
+  /* shadcn compat */
+  --color-background:         var(--background);
+  --color-foreground:         var(--foreground);
+  --color-primary:            var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:          var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:              var(--muted);
+  --color-muted-foreground:   var(--muted-foreground);
+  --color-border:             var(--border);
+  --color-ring:               var(--ring);
+  --color-card:               var(--card);
+  --color-card-foreground:    var(--card-foreground);
+  --color-popover:            var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-accent:             var(--accent);
+  --color-accent-foreground:  var(--accent-foreground);
+  --color-destructive:        var(--destructive);
+  --color-input:              var(--input);
+  --radius-sm:  calc(var(--radius) * 0.6);
+  --radius-md:  calc(var(--radius) * 0.8);
+  --radius-lg:  var(--radius);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Base ──────────────────────────────────────────────────────── */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-text-primary);
+    background: var(--color-surface-base);
+  }
 }
