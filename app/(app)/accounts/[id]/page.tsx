@@ -246,10 +246,13 @@ export default function AccountResultsPage({
               <p className="text-[12px] font-semibold text-[#101828] mb-1">Prompt</p>
               <p className="text-[13px] text-[#3f3f3f]">{promptText}</p>
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-[#eff6ff] border border-[#bedbff] text-[#1160e1] text-[12px] font-medium hover:bg-[#dbeafe] transition-colors shrink-0">
+            <Link
+              href={`/accounts/${id}/edit`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-[#eff6ff] border border-[#bedbff] text-[#1160e1] text-[12px] font-medium hover:bg-[#dbeafe] transition-colors shrink-0"
+            >
               <Icon icon="material-symbols:edit-outline" className="text-[14px]" />
               Edit
-            </button>
+            </Link>
           </div>
         </div>
 

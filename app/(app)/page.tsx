@@ -25,6 +25,7 @@ const PIPELINE = [
 ]
 
 type ProjectStatus = "at-risk" | "prospecting" | "active"
+type KanbanStage = "at-risk" | "prospecting" | "active" | "resolved"
 
 interface AccountItem {
   id: number
@@ -34,6 +35,7 @@ interface AccountItem {
   value: string
   health: number
   avatar: string
+  stage: KanbanStage
 }
 
 interface ProjectAccount {
@@ -56,14 +58,15 @@ interface Project {
   avgHealth: number
   collaboratorAvatars: string[]
   accounts: ProjectAccount[]
+  stage: KanbanStage
 }
 
 const MY_ACCOUNTS: AccountItem[] = [
-  { id: 1, company: "Acme Logistics", contact: "Bryan Daniels",  status: "no-response",   value: "$145,000", health: 85, avatar: "https://i.pravatar.cc/80?img=11" },
-  { id: 2, company: "Snap",           contact: "George Smith",   status: "proposal-sent", value: "$145,000", health: 24, avatar: "https://i.pravatar.cc/80?img=12" },
-  { id: 3, company: "Meta",           contact: "Robert Miller",  status: "interested",    value: "$145,000", health: 85, avatar: "https://i.pravatar.cc/80?img=13" },
-  { id: 4, company: "Estee Lauder",   contact: "Emma Steinfield", status: "no-response",  value: "$145,000", health: 49, avatar: "https://i.pravatar.cc/80?img=14" },
-  { id: 5, company: "Oracle Cloud",   contact: "Yucheng Fang",   status: "qualified",     value: "$145,000", health: 80, avatar: "https://i.pravatar.cc/80?img=15" },
+  { id: 1, company: "Acme Logistics", contact: "Bryan Daniels",   status: "no-response",   value: "$145,000", health: 85, avatar: "https://i.pravatar.cc/80?img=11", stage: "active"      },
+  { id: 2, company: "Snap",           contact: "George Smith",    status: "proposal-sent", value: "$145,000", health: 24, avatar: "https://i.pravatar.cc/80?img=12", stage: "at-risk"     },
+  { id: 3, company: "Meta",           contact: "Robert Miller",   status: "interested",    value: "$145,000", health: 85, avatar: "https://i.pravatar.cc/80?img=13", stage: "active"      },
+  { id: 4, company: "Estee Lauder",   contact: "Emma Steinfield", status: "no-response",   value: "$145,000", health: 49, avatar: "https://i.pravatar.cc/80?img=14", stage: "prospecting" },
+  { id: 5, company: "Oracle Cloud",   contact: "Yucheng Fang",    status: "qualified",     value: "$145,000", health: 80, avatar: "https://i.pravatar.cc/80?img=15", stage: "resolved"    },
 ]
 
 const PROJECTS: Project[] = [
@@ -85,6 +88,7 @@ const PROJECTS: Project[] = [
       { id: 3, company: "Meta",             contact: "Casey Johnson",   projectStatus: "at-risk",     value: "$145,000", health: 25, avatar: "https://i.pravatar.cc/80?img=23" },
       { id: 4, company: "Quincy Solutions", contact: "Chris Lener",     projectStatus: "active",      value: "$145,000", health: 91, avatar: "https://i.pravatar.cc/80?img=24" },
     ],
+    stage: "prospecting",
   },
   {
     id: 2,
@@ -105,6 +109,7 @@ const PROJECTS: Project[] = [
       { id: 7, company: "HubSpot",    contact: "David Park",    projectStatus: "prospecting", value: "$145,000", health: 62, avatar: "https://i.pravatar.cc/80?img=27" },
       { id: 8, company: "Notion",     contact: "Sarah Lee",     projectStatus: "active",      value: "$145,000", health: 94, avatar: "https://i.pravatar.cc/80?img=28" },
     ],
+    stage: "active",
   },
 ]
 
@@ -114,6 +119,14 @@ function healthBarColor(pct: number) {
   if (pct >= 70) return "#00c950"
   if (pct >= 45) return "#f0b100"
   return "#fb2c36"
+}
+
+function parseValue(v: string): number {
+  return parseInt(v.replace(/[$,]/g, ""), 10)
+}
+
+function formatDollar(n: number): string {
+  return "$" + n.toLocaleString()
 }
 
 /* ---- Sub-components ---- */
@@ -178,8 +191,30 @@ const projectStatusConfig: Record<ProjectStatus, { icon: string; color: string; 
   "active":      { icon: "material-symbols:check-circle-rounded", color: "#16a34a", bg: "#f0fdf4", label: "active"      },
 }
 
+const kanbanStageConfig: Record<KanbanStage, { icon: string; color: string; bg: string; label: string }> = {
+  "at-risk":     { icon: "material-symbols:error-circle-rounded",  color: "#fb2c36", bg: "#fff1f1", label: "at-risk"     },
+  "prospecting": { icon: "material-symbols:trending-up-rounded",   color: "#1160e1", bg: "#eff6ff", label: "prospecting" },
+  "active":      { icon: "material-symbols:check-circle-rounded",  color: "#16a34a", bg: "#f0fdf4", label: "active"      },
+  "resolved":    { icon: "material-symbols:check-circle-outline",  color: "#6a7282", bg: "#f3f4f6", label: "resolved"    },
+}
+
+const KANBAN_STAGES: KanbanStage[] = ["at-risk", "prospecting", "active", "resolved"]
+
 function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
   const { icon, color, bg, label } = projectStatusConfig[status]
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+      style={{ backgroundColor: bg, color }}
+    >
+      <Icon icon={icon} className="text-[12px]" />
+      {label}
+    </span>
+  )
+}
+
+function KanbanStageBadge({ stage }: { stage: KanbanStage }) {
+  const { icon, color, bg, label } = kanbanStageConfig[stage]
   return (
     <span
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
@@ -285,6 +320,128 @@ function ProjectCard({ name, description, accountCount, totalValue, daysActive, 
   )
 }
 
+function ProjectKanbanCard({ name, description, accountCount, totalValue, daysActive, avgHealth, collaboratorAvatars }: Omit<Project, "accounts" | "stage" | "id">) {
+  const avgHealthColor = healthBarColor(avgHealth)
+  return (
+    <div className="bg-white rounded-[10px] p-4 border border-[#f0f0f3] shadow-sm">
+      <div className="flex items-start gap-2.5 mb-3">
+        <div className="size-8 rounded-[6px] bg-[#dbeafe] flex items-center justify-center shrink-0">
+          <Icon icon="material-symbols:ballot-outline" className="text-[16px] text-[#1160e1]" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-[#1c1d21] leading-tight">{name}</p>
+          <p className="text-[11px] text-[#6a7282] mt-0.5 line-clamp-2">{description}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3 text-[11px]">
+        <div>
+          <p className="text-[#8181a5]">Accounts</p>
+          <p className="font-semibold text-[#1c1d21] mt-0.5">{accountCount}</p>
+        </div>
+        <div>
+          <p className="text-[#8181a5]">Total Value</p>
+          <p className="font-semibold text-[#1c1d21] mt-0.5">{totalValue}</p>
+        </div>
+        <div>
+          <p className="text-[#8181a5]">Days Active</p>
+          <p className="font-semibold text-[#1c1d21] mt-0.5">{daysActive}</p>
+        </div>
+        <div>
+          <p className="text-[#8181a5]">Collaborators</p>
+          <div className="flex items-center mt-0.5">
+            {collaboratorAvatars.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt=""
+                className="size-5 rounded-full object-cover border border-white"
+                style={{ marginLeft: i > 0 ? "-4px" : 0 }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-[#f3f4f6] pt-2.5">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11px] text-[#6a7282]">Avg Health</span>
+          <span className="text-[11px] font-medium" style={{ color: avgHealthColor }}>{avgHealth}%</span>
+        </div>
+        <div className="h-[5px] bg-[#f0f0f3] rounded-full">
+          <div className="h-full rounded-full" style={{ width: `${avgHealth}%`, backgroundColor: avgHealthColor }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AccountsKanbanView({ accounts }: { accounts: AccountItem[] }) {
+  const columns = KANBAN_STAGES.map((stage) => {
+    const items = accounts.filter((a) => a.stage === stage)
+    const total = items.reduce((sum, a) => sum + parseValue(a.value), 0)
+    return { stage, items, total }
+  })
+
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {columns.map(({ stage, items, total }) => (
+        <div key={stage} className="flex flex-col gap-3 min-w-[240px] flex-1">
+          <div className="mb-1">
+            <div className="flex items-center gap-1.5 mb-1">
+              <KanbanStageBadge stage={stage} />
+              <span className="text-[12px] text-[#6a7282]">({items.length})</span>
+            </div>
+            <p className="text-[12px] text-[#6a7282]">Total: {formatDollar(total)}</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            {items.map((account) => (
+              <AccountCard key={account.id} {...account} />
+            ))}
+            {items.length === 0 && (
+              <div className="rounded-[10px] border border-dashed border-[#d9d9d9] h-[80px] flex items-center justify-center">
+                <span className="text-[12px] text-[#c0c0c0]">No accounts</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ProjectsKanbanView({ projects }: { projects: Project[] }) {
+  const columns = KANBAN_STAGES.map((stage) => {
+    const items = projects.filter((p) => p.stage === stage)
+    const total = items.reduce((sum, p) => sum + parseValue(p.totalValue), 0)
+    return { stage, items, total }
+  })
+
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {columns.map(({ stage, items, total }) => (
+        <div key={stage} className="flex flex-col gap-3 min-w-[260px] flex-1">
+          <div className="mb-1">
+            <div className="flex items-center gap-1.5 mb-1">
+              <KanbanStageBadge stage={stage} />
+              <span className="text-[12px] text-[#6a7282]">({items.length})</span>
+            </div>
+            <p className="text-[12px] text-[#6a7282]">Total: {formatDollar(total)}</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            {items.map((project) => (
+              <ProjectKanbanCard key={project.id} {...project} />
+            ))}
+            {items.length === 0 && (
+              <div className="rounded-[10px] border border-dashed border-[#d9d9d9] h-[80px] flex items-center justify-center">
+                <span className="text-[12px] text-[#c0c0c0]">No projects</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function ContentToolbar({
   search, onSearch,
   activeFilters, onToggleFilter, onRemoveFilter, onClearAllFilters,
@@ -352,11 +509,27 @@ function ContentToolbar({
   )
 }
 
+function ViewToggle({ value, onChange }: { value: "grid" | "kanban"; onChange: (v: "grid" | "kanban") => void }) {
+  return (
+    <div className="flex border border-[#d9d9d9] rounded overflow-hidden bg-white text-[13px]">
+      <button
+        onClick={() => onChange("grid")}
+        className={cn("px-4 py-1.5", value === "grid" ? "bg-[#f0f0f3] font-medium" : "text-[#6a7282]")}
+      >Grid</button>
+      <button
+        onClick={() => onChange("kanban")}
+        className={cn("px-4 py-1.5 border-l border-[#d9d9d9]", value === "kanban" ? "bg-[#f0f0f3] font-medium" : "text-[#6a7282]")}
+      >Kanban</button>
+    </div>
+  )
+}
+
 /* ---- Page ---- */
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("Overview")
-  const [viewMode, setViewMode] = useState<"grid" | "kanban">("grid")
+  const [accountViewMode, setAccountViewMode] = useState<"grid" | "kanban">("grid")
+  const [projectViewMode, setProjectViewMode] = useState<"grid" | "kanban">("grid")
   const [accountSearch, setAccountSearch] = useState("")
   const [accountFilters, setAccountFilters] = useState<string[]>([])
   const [accountFilterOpen, setAccountFilterOpen] = useState(false)
@@ -559,16 +732,7 @@ export default function HomePage() {
               <h2 className="text-[16px] font-semibold text-[#1c1d21]">My Accounts</h2>
               <p className="text-[13px] text-[#8181a5] mt-0.5">Manage your account ownership and workload distribution</p>
             </div>
-            <div className="flex border border-[#d9d9d9] rounded overflow-hidden bg-white text-[13px]">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={cn("px-4 py-1.5", viewMode === "grid" ? "bg-[#f0f0f3] font-medium" : "text-[#6a7282]")}
-              >Grid</button>
-              <button
-                onClick={() => setViewMode("kanban")}
-                className={cn("px-4 py-1.5 border-l border-[#d9d9d9]", viewMode === "kanban" ? "bg-[#f0f0f3] font-medium" : "text-[#6a7282]")}
-              >Kanban</button>
-            </div>
+            <ViewToggle value={accountViewMode} onChange={setAccountViewMode} />
           </div>
 
           <ContentToolbar
@@ -588,11 +752,15 @@ export default function HomePage() {
               <Icon icon="material-symbols:person-outline" className="text-[15px] text-[#6a7282]" />
               <span className="text-[13px] font-medium text-[#3f3f3f]">Your Accounts ({MY_ACCOUNTS.length})</span>
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              {MY_ACCOUNTS.map((account) => (
-                <AccountCard key={account.id} {...account} />
-              ))}
-            </div>
+            {accountViewMode === "grid" ? (
+              <div className="grid grid-cols-4 gap-4">
+                {MY_ACCOUNTS.map((account) => (
+                  <AccountCard key={account.id} {...account} />
+                ))}
+              </div>
+            ) : (
+              <AccountsKanbanView accounts={MY_ACCOUNTS} />
+            )}
           </div>
         </div>
       )}
@@ -605,16 +773,7 @@ export default function HomePage() {
               <h2 className="text-[16px] font-semibold text-[#1c1d21]">All Projects</h2>
               <p className="text-[13px] text-[#8181a5] mt-0.5">View your team&apos;s project</p>
             </div>
-            <div className="flex border border-[#d9d9d9] rounded overflow-hidden bg-white text-[13px]">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={cn("px-4 py-1.5", viewMode === "grid" ? "bg-[#f0f0f3] font-medium" : "text-[#6a7282]")}
-              >Grid</button>
-              <button
-                onClick={() => setViewMode("kanban")}
-                className={cn("px-4 py-1.5 border-l border-[#d9d9d9]", viewMode === "kanban" ? "bg-[#f0f0f3] font-medium" : "text-[#6a7282]")}
-              >Kanban</button>
-            </div>
+            <ViewToggle value={projectViewMode} onChange={setProjectViewMode} />
           </div>
 
           <ContentToolbar
@@ -634,11 +793,15 @@ export default function HomePage() {
               <Icon icon="material-symbols:folder-outline" className="text-[15px] text-[#6a7282]" />
               <span className="text-[13px] font-medium text-[#3f3f3f]">All Projects ({PROJECTS.length})</span>
             </div>
-            <div className="flex flex-col gap-4">
-              {PROJECTS.map((project) => (
-                <ProjectCard key={project.id} {...project} />
-              ))}
-            </div>
+            {projectViewMode === "grid" ? (
+              <div className="flex flex-col gap-4">
+                {PROJECTS.map((project) => (
+                  <ProjectCard key={project.id} {...project} />
+                ))}
+              </div>
+            ) : (
+              <ProjectsKanbanView projects={PROJECTS} />
+            )}
           </div>
         </div>
       )}

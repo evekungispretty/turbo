@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -33,9 +34,7 @@ export function Navbar({ className }: NavbarProps) {
     >
       {/* Logo */}
       <div className="flex items-center gap-[8px] px-[23px] pt-[20px] pb-[68px]">
-        <div className="size-[50px] rounded-full bg-[var(--color-surface-nav-active)] flex items-center justify-center shrink-0">
-          <Icon icon="material-symbols:bolt" className="text-[var(--color-brand)] text-[28px]" />
-        </div>
+        <Image src="/Logo.png" alt="Turbo" width={50} height={50} />
         <span
           className="font-semibold text-[18px] tracking-[0.54px] text-[var(--color-text-brand-label)]"
           style={{ fontFamily: "var(--font-sans)" }}

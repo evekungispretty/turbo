@@ -9,6 +9,7 @@ import { Avatar } from "@/components/turbo/avatar"
 import type { AccountData } from "@/lib/accounts-data"
 
 type Tab = "updates" | "activity-log" | "files" | "account-detail"
+type ModalType = "assign" | "log-activity" | "change-strategy" | null
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "updates",        label: "Updates" },
@@ -449,6 +450,309 @@ function AccountDetailTab({ account }: { account: AccountData }) {
   )
 }
 
+/* ---- Modal wrapper ---- */
+
+function Modal({
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string
+  subtitle?: string
+  onClose: () => void
+  children: React.ReactNode
+  footer?: React.ReactNode
+}) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30">
+      <div className="bg-white rounded-[12px] w-[480px] max-h-[90vh] flex flex-col shadow-xl">
+        <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-[#f3f4f6] shrink-0">
+          <div>
+            <h3 className="text-[15px] font-semibold text-[#101828]">{title}</h3>
+            {subtitle && <p className="text-[12px] text-[#6a7282] mt-0.5">{subtitle}</p>}
+          </div>
+          <button
+            onClick={onClose}
+            className="size-7 flex items-center justify-center rounded-[6px] text-[#6a7282] hover:bg-[#f3f4f6]"
+          >
+            <Icon icon="material-symbols:close-rounded" className="text-[18px]" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {footer && (
+          <div className="px-5 py-4 border-t border-[#f3f4f6] shrink-0">{footer}</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ---- Assign Team Modal ---- */
+
+const TEAM_MEMBERS = [
+  { name: "Claire Johnson",  initials: "CJ", color: "purple" as const },
+  { name: "Michael Chen",    initials: "MC", color: "blue"   as const },
+  { name: "Emily Rodriguez", initials: "ER", color: "purple" as const },
+  { name: "David Kim",       initials: "DK", color: "blue"   as const },
+]
+
+function AssignTeamModal({ onClose }: { onClose: () => void }) {
+  const [owner, setOwner] = useState("")
+  const [selected, setSelected] = useState<string[]>([])
+  const [note, setNote] = useState("")
+
+  function toggle(name: string) {
+    setSelected((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+    )
+  }
+
+  return (
+    <Modal
+      title="Assign Team Members"
+      onClose={onClose}
+      footer={
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-[8px] border border-[#d9d9d9] text-[13px] font-medium text-[#3f3f3f] hover:bg-[#f9f9f9] transition-colors"
+          >
+            Cancel
+          </button>
+          <button className="flex-1 px-4 py-2.5 rounded-[8px] bg-[#1160e1] text-[13px] font-medium text-white hover:bg-[#0e52c1] transition-colors">
+            Assign Team
+          </button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-5">
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Account Owner</label>
+          <input
+            value={owner}
+            onChange={(e) => setOwner(e.target.value)}
+            className="w-full h-[38px] rounded-[6px] border border-[#e5e7eb] px-3 text-[13px] text-[#101828] outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+          />
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-3">Team Members</label>
+          <div className="flex flex-col gap-3">
+            {TEAM_MEMBERS.map((member) => (
+              <div key={member.name} className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id={`tm-${member.name}`}
+                  checked={selected.includes(member.name)}
+                  onChange={() => toggle(member.name)}
+                  className="size-4 rounded border-[#d9d9d9] accent-[#1160e1] cursor-pointer"
+                />
+                <Avatar type="initials" initials={member.initials} color={member.color} size="md" />
+                <label htmlFor={`tm-${member.name}`} className="text-[13px] text-[#101828] cursor-pointer">
+                  {member.name}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Transfer Note</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Add a note for the new owner/team..."
+            className="w-full min-h-[88px] rounded-[6px] border border-[#e5e7eb] px-3 py-2.5 text-[13px] text-[#3f3f3f] placeholder:text-[#9ca3af] resize-none outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+            rows={3}
+          />
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/* ---- Log Activity Modal ---- */
+
+const ACTIVITY_TYPES = ["Call", "Email", "Meeting", "Note", "Demo", "Proposal Sent"]
+
+function LogActivityModal({ onClose }: { onClose: () => void }) {
+  const [activityType, setActivityType] = useState("")
+  const [notes, setNotes] = useState("")
+  const [dateTime, setDateTime] = useState("")
+
+  return (
+    <Modal
+      title="Log Activity"
+      onClose={onClose}
+      footer={
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-[8px] border border-[#d9d9d9] text-[13px] font-medium text-[#3f3f3f] hover:bg-[#f9f9f9] transition-colors"
+          >
+            Cancel
+          </button>
+          <button className="flex-1 px-4 py-2.5 rounded-[8px] bg-[#1160e1] text-[13px] font-medium text-white hover:bg-[#0e52c1] transition-colors">
+            Log Activity
+          </button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-5">
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Activity Type</label>
+          <div className="relative">
+            <select
+              value={activityType}
+              onChange={(e) => setActivityType(e.target.value)}
+              className="w-full h-[38px] rounded-[6px] border border-[#e5e7eb] px-3 pr-9 text-[13px] text-[#101828] outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20 bg-white appearance-none"
+            >
+              <option value="" disabled />
+              {ACTIVITY_TYPES.map((type) => (
+                <option key={type} value={type.toLowerCase().replace(" ", "-")}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            <Icon
+              icon="material-symbols:keyboard-arrow-down"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[16px] text-[#6a7282] pointer-events-none"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Notes</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add details about this activity..."
+            className="w-full min-h-[100px] rounded-[6px] border border-[#e5e7eb] px-3 py-2.5 text-[13px] text-[#3f3f3f] placeholder:text-[#9ca3af] resize-none outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+            rows={4}
+          />
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Date & Time</label>
+          <input
+            type="datetime-local"
+            value={dateTime}
+            onChange={(e) => setDateTime(e.target.value)}
+            className="w-full h-[38px] rounded-[6px] border border-[#e5e7eb] px-3 text-[13px] text-[#101828] outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+          />
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/* ---- Change Strategy Modal ---- */
+
+const STRATEGY_OPTIONS = [
+  "Direct Outreach",
+  "Nurture Campaign",
+  "Executive Escalation",
+  "Partner Referral",
+  "Discount Offer",
+]
+
+function ChangeStrategyModal({ account, onClose }: { account: AccountData; onClose: () => void }) {
+  const [strategy, setStrategy] = useState("")
+  const [why, setWhy] = useState("")
+  const [actionPlan, setActionPlan] = useState("")
+  const [checkpointDate, setCheckpointDate] = useState("")
+  const [checkpointTime, setCheckpointTime] = useState("")
+
+  const issue = account.criticalAlert ?? "Account At Risk"
+
+  return (
+    <Modal
+      title="Take Action"
+      subtitle={issue}
+      onClose={onClose}
+      footer={
+        <button
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[8px] bg-[#1160e1] text-[14px] font-medium text-white hover:bg-[#0e52c1] transition-colors"
+        >
+          <Icon icon="material-symbols:bolt" className="text-[16px]" />
+          Update Strategy
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-[8px] bg-[#eff6ff] border border-[#bedbff]">
+          <Icon icon="material-symbols:trending-up-rounded" className="text-[22px] text-[#1160e1] shrink-0" />
+          <div>
+            <p className="text-[13px] font-medium text-[#101828]">Change Strategy</p>
+            <p className="text-[12px] text-[#6a7282]">Try a different approach for {account.contactName}</p>
+          </div>
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Current Issue</label>
+          <div className="w-full h-[38px] rounded-[6px] border border-[#fca5a5] bg-[#fef2f2] px-3 flex items-center text-[13px] text-[#dc2626]">
+            {issue}
+          </div>
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">New Strategy</label>
+          <div className="relative">
+            <select
+              value={strategy}
+              onChange={(e) => setStrategy(e.target.value)}
+              className="w-full h-[38px] rounded-[6px] border border-[#e5e7eb] px-3 pr-9 text-[13px] text-[#101828] outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20 bg-white appearance-none"
+            >
+              <option value="" disabled>Select...</option>
+              {STRATEGY_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <Icon
+              icon="material-symbols:keyboard-arrow-down"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[16px] text-[#6a7282] pointer-events-none"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Why change strategy?</label>
+          <textarea
+            value={why}
+            onChange={(e) => setWhy(e.target.value)}
+            placeholder="What's not working with the current approach?"
+            className="w-full min-h-[88px] rounded-[6px] border border-[#e5e7eb] px-3 py-2.5 text-[13px] text-[#3f3f3f] placeholder:text-[#9ca3af] resize-none outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+            rows={3}
+          />
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Action Plan</label>
+          <textarea
+            value={actionPlan}
+            onChange={(e) => setActionPlan(e.target.value)}
+            placeholder="What specific actions will you take with this new strategy?"
+            className="w-full min-h-[88px] rounded-[6px] border border-[#e5e7eb] px-3 py-2.5 text-[13px] text-[#3f3f3f] placeholder:text-[#9ca3af] resize-none outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+            rows={3}
+          />
+        </div>
+        <div>
+          <label className="block text-[13px] text-[#3f3f3f] mb-2">Set Checkpoint</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="date"
+              value={checkpointDate}
+              onChange={(e) => setCheckpointDate(e.target.value)}
+              className="flex-1 h-[38px] rounded-[6px] border border-[#e5e7eb] px-3 text-[13px] text-[#101828] outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+            />
+            <input
+              type="time"
+              value={checkpointTime}
+              onChange={(e) => setCheckpointTime(e.target.value)}
+              className="flex-1 h-[38px] rounded-[6px] border border-[#e5e7eb] px-3 text-[13px] text-[#101828] outline-none focus:border-[#1160e1] focus:ring-1 focus:ring-[#1160e1]/20"
+            />
+          </div>
+          <p className="text-[12px] text-[#6a7282] mt-1.5">We'll check if the new strategy is working</p>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 /* ---- Main drawer ---- */
 
 interface AccountDrawerProps {
@@ -456,9 +760,16 @@ interface AccountDrawerProps {
   onClose: () => void
 }
 
+const ACTION_MODAL_MAP: Record<string, ModalType> = {
+  "Assign to": "assign",
+  "Log activity": "log-activity",
+  "Change Strategy": "change-strategy",
+}
+
 export function AccountDrawer({ account, onClose }: AccountDrawerProps) {
   const [activeTab, setActiveTab] = useState<Tab>("updates")
   const [moreActionsOpen, setMoreActionsOpen] = useState(false)
+  const [openModal, setOpenModal] = useState<ModalType>(null)
   const moreActionsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -527,7 +838,10 @@ export function AccountDrawer({ account, onClose }: AccountDrawerProps) {
                   <button
                     key={action}
                     className="w-full text-left px-3 py-2 text-[13px] text-[#3f3f3f] hover:bg-[#f3f4f6] transition-colors"
-                    onClick={() => setMoreActionsOpen(false)}
+                    onClick={() => {
+                      setMoreActionsOpen(false)
+                      setOpenModal(ACTION_MODAL_MAP[action] ?? null)
+                    }}
                   >
                     {action}
                   </button>
@@ -563,6 +877,10 @@ export function AccountDrawer({ account, onClose }: AccountDrawerProps) {
         {activeTab === "files"          && <FilesTab />}
         {activeTab === "account-detail" && <AccountDetailTab account={account} />}
       </div>
+
+      {openModal === "assign"          && <AssignTeamModal onClose={() => setOpenModal(null)} />}
+      {openModal === "log-activity"    && <LogActivityModal onClose={() => setOpenModal(null)} />}
+      {openModal === "change-strategy" && <ChangeStrategyModal account={account} onClose={() => setOpenModal(null)} />}
     </div>
   )
 }
